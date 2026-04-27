@@ -25,9 +25,10 @@ export default function AdvancedTicTacToe() {
     matrix: { text: 'text-green-500', glow: 'drop-shadow-[0_0_15px_rgba(34,197,94,0.8)]', border: 'border-green-500/50', bg: 'bg-green-500' }
   };
 
-  const vibrate = (ms: number) => {
+  // Fixed the type here to accept an array of numbers as well
+  const vibrate = (pattern: number | number[]) => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(ms);
+      navigator.vibrate(pattern);
     }
   };
 
