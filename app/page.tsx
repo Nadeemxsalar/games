@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
+// TypeScript Types define kar rahe hain
 type Player = 'X' | 'O' | null;
 type Theme = 'cyan' | 'pink' | 'matrix';
 type GameMode = 'PvP' | 'PvAI';
@@ -18,7 +19,7 @@ export default function UltimateTicTacToe() {
   const [history, setHistory] = useState<Player[][]>([]);
   const [showSettings, setShowSettings] = useState(false);
   
-  // New Feature States
+  // Advance Features States
   const [playerNames, setPlayerNames] = useState({ X: 'Nadeem', O: 'Guest/Bot' });
   const [timeLeft, setTimeLeft] = useState(10);
   const [streak, setStreak] = useState({ player: null as Player, count: 0 });
@@ -33,40 +34,57 @@ export default function UltimateTicTacToe() {
     matrix: { text: 'text-green-500', glow: 'drop-shadow-[0_0_15px_rgba(34,197,94,0.8)]', border: 'border-green-500/50', bg: 'bg-green-500' }
   };
 
-  // Feature: Web Audio Synth (No external files needed)
+  // Fixed Audio Logic: TypeScript error hatane ke liye 'any' cast kiya hai
   const playSound = (type: 'tap' | 'win' | 'draw') => {
     if (typeof window === 'undefined') return;
     try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
+      const ctx = new AudioContextClass();
       const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      const gainNode = ctx.createGain();
       
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      const volume = gainNode.gain as any; 
+
       if (type === 'tap') {
-        osc.type = 'sine'; osc.frequency.setValueAtTime(400, ctx.currentTime);
-        gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-        osc.start(); osc.stop(ctx.currentTime + 0.1);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, ctx.currentTime);
+        volume.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
       } else if (type === 'win') {
-        osc.type = 'square'; osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
         osc.frequency.setValueAtTime(800, ctx.currentTime + 0.1);
-        gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-        osc.start(); osc.stop(ctx.currentTime + 0.5);
+        volume.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
       } else {
-        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, ctx.currentTime);
-        gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-        osc.start(); osc.stop(ctx.currentTime + 0.4);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        volume.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
       }
-    } catch (e) { console.log("Audio not supported"); }
+    } catch (e) {
+      console.log("Audio not supported");
+    }
   };
 
   const vibrate = (pattern: number | number[]) => {
-    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(pattern);
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(pattern);
+    }
   };
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
-    else if (document.exitFullscreen) document.exitFullscreen();
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen();
+    }
   };
 
   // Turn Timer Logic
@@ -75,7 +93,7 @@ export default function UltimateTicTacToe() {
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          setIsXNext(!isXNext); // Skip turn if time out
+          setIsXNext(!isXNext); 
           return 10;
         }
         return prev - 1;
@@ -95,41 +113,46 @@ export default function UltimateTicTacToe() {
     return null;
   };
 
-  // Smart AI Logic (Hard Mode)
   const getAIMove = (currentBoard: Player[]) => {
     const emptyIndices = currentBoard.map((v, i) => (v === null ? i : null)).filter(v => v !== null) as number[];
     if (difficulty === 'Easy') return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
     
-    // Hard Mode: Block or Win
+    // Hard Mode logic
     for (let i of emptyIndices) {
-      const boardCopy = [...currentBoard]; boardCopy[i] = 'O'; // Try to win
+      const boardCopy = [...currentBoard];
+      boardCopy[i] = 'O'; 
       if (checkWinner(boardCopy)) return i;
     }
     for (let i of emptyIndices) {
-      const boardCopy = [...currentBoard]; boardCopy[i] = 'X'; // Try to block
+      const boardCopy = [...currentBoard];
+      boardCopy[i] = 'X'; 
       if (checkWinner(boardCopy)) return i;
     }
-    return emptyIndices[Math.floor(Math.random() * emptyIndices.length)]; // Fallback
+    return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
   };
 
   const handleClick = useCallback((index: number) => {
     if (board[index] || winner || tournamentWinner) return;
 
-    playSound('tap'); vibrate(50);
+    playSound('tap');
+    vibrate(50);
     setHistory([...history, [...board]]);
     
     const newBoard = [...board];
     newBoard[index] = isXNext ? 'X' : 'O';
     setBoard(newBoard);
-    setTimeLeft(10); // Reset Timer
+    setTimeLeft(10); 
     
     const result = checkWinner(newBoard);
-    if (result) handleWin(result.winPlayer, result.line);
-    else if (!newBoard.includes(null)) handleDraw();
-    else setIsXNext(!isXNext);
+    if (result) {
+      handleWin(result.winPlayer, result.line);
+    } else if (!newBoard.includes(null)) {
+      handleDraw();
+    } else {
+      setIsXNext(!isXNext);
+    }
   }, [board, isXNext, winner, history, tournamentWinner]);
 
-  // Trigger AI
   useEffect(() => {
     if (mode === 'PvAI' && !isXNext && !winner && !tournamentWinner) {
       const timer = setTimeout(() => handleClick(getAIMove(board)), 600);
@@ -140,13 +163,22 @@ export default function UltimateTicTacToe() {
   const handleWin = (winPlayer: Player, line: number[]) => {
     setWinner(winPlayer);
     setWinningLine(line);
-    playSound('win'); vibrate([100, 50, 100, 50, 200]);
+    playSound('win');
+    vibrate([100, 50, 100, 50, 200]);
     
-    setScores(prev => {
-      const newScores = { ...prev, [winPlayer as string]: prev[winPlayer as keyof typeof prev] + 1 };
-      if (newScores[winPlayer as string] >= 3) setTournamentWinner(winPlayer); // Tournament Rule
-      return newScores;
-    });
+    if (winPlayer === 'X') {
+      setScores(prev => {
+        const nextX = prev.X + 1;
+        if (nextX >= 3) setTournamentWinner('X');
+        return { ...prev, X: nextX };
+      });
+    } else if (winPlayer === 'O') {
+      setScores(prev => {
+        const nextO = prev.O + 1;
+        if (nextO >= 3) setTournamentWinner('O');
+        return { ...prev, O: nextO };
+      });
+    }
 
     setStreak(prev => ({
       player: winPlayer, count: prev.player === winPlayer ? prev.count + 1 : 1
@@ -156,12 +188,22 @@ export default function UltimateTicTacToe() {
   const handleDraw = () => {
     setScores(prev => ({ ...prev, Draws: prev.Draws + 1 }));
     setStreak({ player: null, count: 0 });
-    playSound('draw'); vibrate(300);
+    playSound('draw');
+    vibrate(300);
   };
 
   const resetGame = (fullReset = false) => {
-    setBoard(Array(9).fill(null)); setIsXNext(true); setWinner(null); setWinningLine([]); setHistory([]); setTimeLeft(10);
-    if (fullReset) { setScores({ X: 0, O: 0, Draws: 0 }); setTournamentWinner(null); setStreak({ player: null, count: 0 }); }
+    setBoard(Array(9).fill(null));
+    setIsXNext(true);
+    setWinner(null);
+    setWinningLine([]);
+    setHistory([]);
+    setTimeLeft(10);
+    if (fullReset) {
+      setScores({ X: 0, O: 0, Draws: 0 });
+      setTournamentWinner(null);
+      setStreak({ player: null, count: 0 });
+    }
   };
 
   const currentTheme = themes[theme];
@@ -169,10 +211,10 @@ export default function UltimateTicTacToe() {
   return (
     <div className={`min-h-[100dvh] bg-[#0a0a0a] text-white flex flex-col items-center p-4 font-sans select-none touch-manipulation overflow-hidden relative ${crtEffect ? 'crt-scanlines' : ''}`}>
       
-      {/* Background Particles */}
+      {/* Dynamic Background */}
       <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-700 via-gray-900 to-black"></div>
 
-      {/* Header */}
+      {/* Header Section */}
       <div className="w-full max-w-md flex justify-between items-center mt-2 z-10">
         <h1 className={`text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r ${currentTheme.text} to-white drop-shadow-md`}>
           NEXUS<span className="text-white">TicTac</span>
@@ -183,9 +225,9 @@ export default function UltimateTicTacToe() {
         </div>
       </div>
 
-      {/* Streak & Tournament Banner */}
+      {/* Status Banners */}
       {tournamentWinner ? (
-        <div className="z-10 mt-4 bg-yellow-500/20 border border-yellow-500/50 p-2 rounded-xl text-yellow-400 font-bold animate-pulse">
+        <div className="z-10 mt-4 bg-yellow-500/20 border border-yellow-500/50 p-2 rounded-xl text-yellow-400 font-bold animate-pulse text-center w-full max-w-md">
           🏆 {playerNames[tournamentWinner as keyof typeof playerNames]} Wins The Tournament!
         </div>
       ) : streak.count >= 2 ? (
@@ -194,9 +236,8 @@ export default function UltimateTicTacToe() {
         </div>
       ) : <div className="mt-8"></div>}
 
-      {/* Score Board */}
+      {/* Score and Timer Board */}
       <div className="z-10 flex gap-4 my-4 bg-white/5 p-4 rounded-2xl backdrop-blur-xl border border-white/10 w-full max-w-md justify-between shadow-lg relative overflow-hidden">
-        {/* Timer Bar */}
         <div className={`absolute bottom-0 left-0 h-1 transition-all duration-1000 ${timeLeft < 4 ? 'bg-red-500' : currentTheme.bg}`} style={{ width: `${(timeLeft / 10) * 100}%` }}></div>
         
         <div className={`text-center flex-1 ${isXNext && !winner ? 'scale-110 drop-shadow-lg' : 'opacity-70'} transition-all`}>
@@ -213,14 +254,16 @@ export default function UltimateTicTacToe() {
         </div>
       </div>
 
-      {/* Game Board */}
+      {/* Tic-Tac-Toe Board Grid */}
       <div className="z-10 relative grid grid-cols-3 gap-2 sm:gap-3 bg-white/5 p-4 rounded-3xl backdrop-blur-2xl border border-white/10 shadow-2xl">
-        {winner && <div className="absolute inset-0 pointer-events-none flex justify-center items-center z-20 text-6xl animate-[confetti_2s_ease-out_forwards]">👑✨🎉👑✨</div>}
+        {winner && <div className="absolute inset-0 pointer-events-none flex justify-center items-center z-20 text-4xl animate-bounce">👑✨🎉</div>}
         {board.map((cell, index) => {
           const isWinningCell = winningLine.includes(index);
           return (
             <button
-              key={index} onClick={() => handleClick(index)} disabled={!!winner || !!cell || !!tournamentWinner}
+              key={index} 
+              onClick={() => handleClick(index)} 
+              disabled={!!winner || !!cell || !!tournamentWinner}
               className={`w-24 h-24 sm:w-28 sm:h-28 text-5xl sm:text-6xl font-bold flex items-center justify-center rounded-2xl transition-all duration-300 transform active:scale-95
                 ${!cell ? 'bg-white/5 hover:bg-white/10 shadow-inner' : 'bg-black/40'}
                 ${cell === 'X' ? themes.cyan.text + ' ' + themes.cyan.glow : ''}
@@ -234,48 +277,45 @@ export default function UltimateTicTacToe() {
         })}
       </div>
 
-      {/* Controls & Status */}
+      {/* Control Buttons */}
       <div className="z-10 w-full max-w-md flex flex-col items-center mt-6 space-y-4">
         <div className="flex w-full gap-4">
-          <button onClick={() => resetGame(false)} className={`flex-1 py-3 text-black font-bold rounded-xl ${currentTheme.bg} hover:brightness-110 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)]`}>
+          <button onClick={() => resetGame(false)} className={`flex-1 py-3 text-black font-bold rounded-xl ${currentTheme.bg} hover:brightness-110 active:scale-95 transition-all shadow-lg`}>
             Next Round
           </button>
           <button onClick={() => resetGame(true)} className="flex-1 py-3 bg-red-500/20 text-red-400 rounded-xl font-semibold border border-red-500/30 active:scale-95 transition-transform">
-            Restart Series
+            Reset Series
           </button>
         </div>
       </div>
 
-      {/* Settings Modal */}
+      {/* Glassmorphism Settings Modal */}
       {showSettings && (
         <div className="absolute inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-[fadeIn_0.2s_ease-out]">
           <div className="w-full max-w-md bg-gray-900 border border-white/20 p-6 rounded-3xl shadow-2xl mb-8 sm:mb-0 relative">
             <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 text-gray-400 text-2xl">×</button>
-            <h2 className="text-2xl font-bold mb-6 text-white">NEXUS Engine Setup</h2>
+            <h2 className="text-2xl font-bold mb-6 text-white">Game Settings</h2>
             
             <div className="space-y-5">
-              {/* Names */}
               <div className="flex gap-4">
-                <input type="text" placeholder="Player 1" value={playerNames.X} onChange={e => setPlayerNames({...playerNames, X: e.target.value})} className="w-full bg-black/50 p-2 rounded-lg border border-white/10 text-cyan-400 focus:outline-none"/>
-                <input type="text" placeholder="Player 2" value={playerNames.O} onChange={e => setPlayerNames({...playerNames, O: e.target.value})} className="w-full bg-black/50 p-2 rounded-lg border border-white/10 text-fuchsia-500 focus:outline-none" disabled={mode === 'PvAI'}/>
+                <input type="text" placeholder="Player X" value={playerNames.X} onChange={e => setPlayerNames({...playerNames, X: e.target.value})} className="w-full bg-black/50 p-2 rounded-lg border border-white/10 text-cyan-400 focus:outline-none"/>
+                <input type="text" placeholder="Player O" value={playerNames.O} onChange={e => setPlayerNames({...playerNames, O: e.target.value})} className="w-full bg-black/50 p-2 rounded-lg border border-white/10 text-fuchsia-500 focus:outline-none" disabled={mode === 'PvAI'}/>
               </div>
 
-              {/* Toggles */}
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => {setMode('PvP'); resetGame(true); setPlayerNames({...playerNames, O: 'Player 2'})}} className={`p-2 rounded-lg border ${mode === 'PvP' ? 'bg-white/20 border-white' : 'border-white/10 text-gray-500'}`}>👤 1 vs 1</button>
+                <button onClick={() => {setMode('PvP'); resetGame(true); setPlayerNames({...playerNames, O: 'Player O'})}} className={`p-2 rounded-lg border ${mode === 'PvP' ? 'bg-white/20 border-white' : 'border-white/10 text-gray-500'}`}>👤 1 vs 1</button>
                 <button onClick={() => {setMode('PvAI'); resetGame(true); setPlayerNames({...playerNames, O: 'Bot'})}} className={`p-2 rounded-lg border ${mode === 'PvAI' ? 'bg-white/20 border-white' : 'border-white/10 text-gray-500'}`}>🤖 vs AI</button>
                 
                 {mode === 'PvAI' && (
                   <>
-                    <button onClick={() => setDifficulty('Easy')} className={`p-2 rounded-lg border ${difficulty === 'Easy' ? 'bg-green-500/20 text-green-400 border-green-500' : 'border-white/10 text-gray-500'}`}>Noob AI</button>
-                    <button onClick={() => setDifficulty('Hard')} className={`p-2 rounded-lg border ${difficulty === 'Hard' ? 'bg-red-500/20 text-red-400 border-red-500' : 'border-white/10 text-gray-500'}`}>Pro AI</button>
+                    <button onClick={() => setDifficulty('Easy')} className={`p-2 rounded-lg border ${difficulty === 'Easy' ? 'bg-green-500/20 text-green-400 border-green-500' : 'border-white/10 text-gray-500'}`}>Easy Bot</button>
+                    <button onClick={() => setDifficulty('Hard')} className={`p-2 rounded-lg border ${difficulty === 'Hard' ? 'bg-red-500/20 text-red-400 border-red-500' : 'border-white/10 text-gray-500'}`}>Pro Bot</button>
                   </>
                 )}
               </div>
 
-              {/* Theme & Visuals */}
               <div className="flex justify-between items-center bg-black/50 p-3 rounded-xl border border-white/10">
-                <p className="text-sm">CRT Monitor Effect</p>
+                <p className="text-sm">CRT Effect</p>
                 <button onClick={() => setCrtEffect(!crtEffect)} className={`w-12 h-6 rounded-full transition-colors ${crtEffect ? 'bg-green-500' : 'bg-gray-600'} relative`}>
                   <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${crtEffect ? 'translate-x-6' : ''}`}></div>
                 </button>
@@ -283,7 +323,7 @@ export default function UltimateTicTacToe() {
 
               <div className="flex gap-4 justify-center pt-4">
                 {(['cyan', 'pink', 'matrix'] as Theme[]).map(t => (
-                  <button key={t} onClick={() => setTheme(t)} className={`w-12 h-12 rounded-full border-4 ${theme === t ? 'border-white scale-110 shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'border-transparent opacity-50'} ${themes[t].bg}`}></button>
+                  <button key={t} onClick={() => setTheme(t)} className={`w-12 h-12 rounded-full border-4 ${theme === t ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-50'} ${themes[t].bg}`}></button>
                 ))}
               </div>
             </div>
@@ -291,11 +331,10 @@ export default function UltimateTicTacToe() {
         </div>
       )}
 
-      {/* Global Advanced CSS */}
+      {/* Core Animations Styling */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes confetti { 0% { transform: translateY(-50px) scale(0); opacity: 1; } 100% { transform: translateY(150px) scale(1.5); opacity: 0; } }
         .crt-scanlines::before {
           content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
           background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));

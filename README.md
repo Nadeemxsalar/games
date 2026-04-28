@@ -1,5 +1,20 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+
+## 🛠 Tech Stack Arsenal
+
+<p align="left">
+  <img src="https://img.shields.io/badge/Next-black?style=for-the-badge&logo=next.js&logoColor=white" />
+  <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" />
+  <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" />
+</p>
+
+### 🚀 Key Features
+- **Ultimate UI:** Built with Tailwind CSS for a professional Glassmorphism look.
+- **Type Safety:** 100% TypeScript for robust game logic.
+- **Modern Stack:** Next.js 14 App Router integration.
+
 ## Getting Started
 
 First, run the development server:
